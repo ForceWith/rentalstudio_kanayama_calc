@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>レンタルスタジオ料金計算</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+      padding: 16px;
+      padding-bottom: 100px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1d1d1f;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #86868b;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .reservation-item {
+      background: #f5f5f7;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    .reservation-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .reservation-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .reservation-number {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1d1d1f;
+    }
+
+    .remove-btn {
+      background: none;
+      border: none;
+      color: #ff3b30;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: #86868b;
+      margin-bottom: 6px;
+    }
+
+    input[type="datetime-local"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d2d2d7;
+      border-radius: 10px;
+      font-size: 16px;
+      color: #1d1d1f;
+      background: #fff;
+      -webkit-appearance: none;
+    }
+
+    input[type="datetime-local"]:focus {
+      outline: none;
+      border-color: #0071e3;
+    }
+
+    .add-btn {
+      width: 100%;
+      padding: 14px;
+      background: #f5f5f7;
+      border: 2px dashed #d2d2d7;
+      border-radius: 12px;
+      font-size: 15px;
+      color: #86868b;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .add-btn:hover {
+      border-color: #0071e3;
+      color: #0071e3;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .option-label {
+      font-size: 15px;
+      color: #1d1d1f;
+    }
+
+    .toggle {
+      position: relative;
+      width: 51px;
+      height: 31px;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #e9e9eb;
+      transition: 0.3s;
+      border-radius: 31px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 27px;
+      width: 27px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .toggle input:checked + .toggle-slider {
+      background-color: #34c759;
+    }
+
+    .toggle input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+    }
+
+    .segment-control {
+      display: flex;
+      background: #e9e9eb;
+      border-radius: 8px;
+      padding: 2px;
+    }
+
+    .segment-btn {
+      flex: 1;
+      padding: 8px 12px;
+      border: none;
+      background: none;
+      font-size: 13px;
+      color: #1d1d1f;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .segment-btn.active {
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .calculate-btn {
+      width: 100%;
+      padding: 16px;
+      background: #0071e3;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .calculate-btn:hover {
+      background: #0077ed;
+    }
+
+    .calculate-btn:active {
+      background: #006edb;
+    }
+
+    .result {
+      display: none;
+    }
+
+    .result.show {
+      display: block;
+    }
+
+    .result-total {
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    .result-total-label {
+      font-size: 14px;
+      color: #86868b;
+      margin-bottom: 8px;
+    }
+
+    .result-total-amount {
+      font-size: 40px;
+      font-weight: 700;
+      color: #1d1d1f;
+    }
+
+    .result-breakdown {
+      border-top: 1px solid #e5e5ea;
+      padding-top: 16px;
+    }
+
+    .breakdown-item {
+      padding: 12px 0;
+      border-bottom: 1px solid #f5f5f7;
+    }
+
+    .breakdown-item:last-child {
+      border-bottom: none;
+    }
+
+    .breakdown-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .breakdown-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1d1d1f;
+    }
+
+    .breakdown-amount {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1d1d1f;
+    }
+
+    .breakdown-detail {
+      font-size: 13px;
+      color: #86868b;
+      line-height: 1.5;
+    }
+
+    .error {
+      background: #fff2f2;
+      color: #ff3b30;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>レンタルスタジオ料金計算</h1>
+
+    <div class="error" id="error"></div>
+
+    <div class="card">
+      <div class="card-title">予約情報</div>
+      <div id="reservations"></div>
+      <button class="add-btn" onclick="addReservation()">＋ 予約を追加</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">オプション</div>
+      <div class="options">
+        <div class="option-row">
+          <span class="option-label">定期利用</span>
+          <label class="toggle">
+            <input type="checkbox" id="regular" onchange="updateSource()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="option-row" id="source-row">
+          <span class="option-label">予約経路</span>
+          <div class="segment-control">
+            <button class="segment-btn active" data-value="yoyakuru" onclick="setSource(this)">よやくる</button>
+            <button class="segment-btn" data-value="insta" onclick="setSource(this)">インスタ・スペ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="calculate-btn" onclick="calculate()">計算する</button>
+
+    <div class="card result" id="result">
+      <div class="result-total">
+        <div class="result-total-label">合計金額</div>
+        <div class="result-total-amount" id="total-amount">¥0</div>
+      </div>
+      <div class="result-breakdown" id="breakdown"></div>
+    </div>
+  </div>
+
+  <script>
+    // 料金テーブル（税抜）
+    const PRICES = {
+      // 3時間未満
+      under3: {
+        yoyakuru: {
+          night: 1100,      // 深夜・早朝
+          daytime: 1300,    // 平日日中
+          evening: 2218,    // 平日夕方・夜
+          holiday: 2545     // 休日・祝日
+        },
+        insta: {
+          night: 1300,
+          daytime: 1500,
+          evening: 2400,
+          holiday: 2700
+        }
+      },
+      // 3時間以上
+      over3: {
+        yoyakuru: {
+          night: 1000,
+          daytime: 1200,
+          evening: 2000,
+          holiday: 2278
+        },
+        insta: {
+          night: 1200,
+          daytime: 1400,
+          evening: 2200,
+          holiday: 2500
+        }
+      }
+    };
+
+    // 時間帯定義
+    const TIME_ZONES = {
+      // 深夜・早朝: 22:00~24:00, 0:00~9:00
+      // 平日日中: 9:00~16:00
+      // 平日夕方・夜: 16:00~22:00
+      // 休日: 9:00~22:00
+    };
+
+    let reservationCount = 0;
+    let source = 'yoyakuru';
+
+    function addReservation() {
+      reservationCount++;
+      const id = reservationCount;
+      const container = document.getElementById('reservations');
+      const div = document.createElement('div');
+      div.className = 'reservation-item';
+      div.id = `reservation-${id}`;
+      div.innerHTML = `
+        <div class="reservation-header">
+          <span class="reservation-number">予約 ${id}</span>
+          <button class="remove-btn" onclick="removeReservation(${id})">削除</button>
+        </div>
+        <div class="form-group">
+          <label>開始日時</label>
+          <input type="datetime-local" id="start-${id}" step="1800" onchange="onStartChange(${id})">
+        </div>
+        <div class="form-group">
+          <label>終了日時</label>
+          <input type="datetime-local" id="end-${id}" step="1800">
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
+    function onStartChange(id) {
+      const startInput = document.getElementById(`start-${id}`);
+      const endInput = document.getElementById(`end-${id}`);
+      
+      if (startInput.value && !endInput.value) {
+        const startDate = new Date(startInput.value);
+        startDate.setHours(startDate.getHours() + 1);
+        
+        // datetime-local形式に変換（YYYY-MM-DDTHH:MM）
+        const year = startDate.getFullYear();
+        const month = String(startDate.getMonth() + 1).padStart(2, '0');
+        const day = String(startDate.getDate()).padStart(2, '0');
+        const hour = String(startDate.getHours()).padStart(2, '0');
+        const minute = String(startDate.getMinutes()).padStart(2, '0');
+        
+        endInput.value = `${year}-${month}-${day}T${hour}:${minute}`;
+      }
+    }
+
+    function removeReservation(id) {
+      const element = document.getElementById(`reservation-${id}`);
+      if (element) {
+        element.remove();
+      }
+    }
+
+    function updateSource() {
+      const regular = document.getElementById('regular').checked;
+      const sourceRow = document.getElementById('source-row');
+      
+      if (regular) {
+        source = 'yoyakuru';
+        sourceRow.style.opacity = '0.5';
+        sourceRow.style.pointerEvents = 'none';
+        document.querySelectorAll('.segment-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.value === 'yoyakuru');
+        });
+      } else {
+        sourceRow.style.opacity = '1';
+        sourceRow.style.pointerEvents = 'auto';
+      }
+    }
+
+    function setSource(btn) {
+      document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      source = btn.dataset.value;
+    }
+
+    function isHoliday(date) {
+      const day = date.getDay();
+      return day === 0 || day === 6; // 土日
+      // TODO: 祝日判定を追加する場合はここに
+    }
+
+    function getTimeZone(date, isHolidayFlag) {
+      const hour = date.getHours();
+      const minute = date.getMinutes();
+      const time = hour + minute / 60;
+
+      // 深夜・早朝: 22:00~24:00, 0:00~9:00
+      if (time >= 22 || time < 9) {
+        return 'night';
+      }
+
+      // 休日: 9:00~22:00
+      if (isHolidayFlag) {
+        return 'holiday';
+      }
+
+      // 平日日中: 9:00~16:00
+      if (time >= 9 && time < 16) {
+        return 'daytime';
+      }
+
+      // 平日夕方・夜: 16:00~22:00
+      return 'evening';
+    }
+
+    function getTimeZoneLabel(zone) {
+      const labels = {
+        night: '深夜・早朝',
+        daytime: '平日日中',
+        evening: '平日夕方・夜',
+        holiday: '休日・祝日'
+      };
+      return labels[zone];
+    }
+
+    function calculateReservation(startDate, endDate, priceTable) {
+      const breakdown = [];
+      let current = new Date(startDate);
+      
+      while (current < endDate) {
+        const currentHoliday = isHoliday(current);
+        const zone = getTimeZone(current, currentHoliday);
+        
+        // 次の時間帯の境界を計算
+        let nextBoundary = new Date(current);
+        const hour = current.getHours();
+        
+        if (hour >= 22) {
+          // 22時以降 → 翌日9時まで深夜
+          nextBoundary.setDate(nextBoundary.getDate() + 1);
+          nextBoundary.setHours(9, 0, 0, 0);
+        } else if (hour < 9) {
+          // 0-9時 → 9時まで深夜
+          nextBoundary.setHours(9, 0, 0, 0);
+        } else if (currentHoliday) {
+          // 休日9-22時 → 22時まで
+          nextBoundary.setHours(22, 0, 0, 0);
+        } else if (hour < 16) {
+          // 平日日中 → 16時まで
+          nextBoundary.setHours(16, 0, 0, 0);
+        } else {
+          // 平日夕方・夜 → 22時まで
+          nextBoundary.setHours(22, 0, 0, 0);
+        }
+
+        // 終了時刻を超えないように
+        const segmentEnd = nextBoundary < endDate ? nextBoundary : endDate;
+        
+        // この区間の時間を計算
+        const hours = (segmentEnd - current) / (1000 * 60 * 60);
+        
+        if (hours > 0) {
+          const price = priceTable[zone];
+          breakdown.push({
+            zone: zone,
+            label: getTimeZoneLabel(zone),
+            hours: hours,
+            price: price,
+            subtotal: Math.round(hours * price)
+          });
+        }
+
+        current = segmentEnd;
+      }
+
+      // 同じ時間帯をまとめる
+      const merged = {};
+      breakdown.forEach(item => {
+        if (merged[item.zone]) {
+          merged[item.zone].hours += item.hours;
+          merged[item.zone].subtotal += item.subtotal;
+        } else {
+          merged[item.zone] = { ...item };
+        }
+      });
+
+      return Object.values(merged);
+    }
+
+    function formatDate(date) {
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const hour = String(date.getHours()).padStart(2, '0');
+      const minute = String(date.getMinutes()).padStart(2, '0');
+      return `${month}/${day} ${hour}:${minute}`;
+    }
+
+    function calculate() {
+      const errorEl = document.getElementById('error');
+      const resultEl = document.getElementById('result');
+      const breakdownEl = document.getElementById('breakdown');
+      const totalEl = document.getElementById('total-amount');
+      
+      errorEl.classList.remove('show');
+      resultEl.classList.remove('show');
+
+      // 予約情報を収集
+      const reservations = [];
+      document.querySelectorAll('.reservation-item').forEach(item => {
+        const id = item.id.split('-')[1];
+        const startInput = document.getElementById(`start-${id}`);
+        const endInput = document.getElementById(`end-${id}`);
+        
+        if (startInput && endInput && startInput.value && endInput.value) {
+          reservations.push({
+            start: new Date(startInput.value),
+            end: new Date(endInput.value)
+          });
+        }
+      });
+
+      if (reservations.length === 0) {
+        errorEl.textContent = '予約情報を入力してください';
+        errorEl.classList.add('show');
+        return;
+      }
+
+      // バリデーション
+      for (let i = 0; i < reservations.length; i++) {
+        if (reservations[i].end <= reservations[i].start) {
+          errorEl.textContent = `予約${i + 1}: 終了日時は開始日時より後にしてください`;
+          errorEl.classList.add('show');
+          return;
+        }
+      }
+
+      const regular = document.getElementById('regular').checked;
+      let grandTotal = 0;
+      let breakdownHTML = '';
+
+      reservations.forEach((res, index) => {
+        // 利用時間を計算
+        const totalHours = (res.end - res.start) / (1000 * 60 * 60);
+        const priceCategory = totalHours >= 3 ? 'over3' : 'under3';
+        const priceTable = PRICES[priceCategory][source];
+
+        // 時間帯別の計算
+        const breakdown = calculateReservation(res.start, res.end, priceTable);
+        
+        let subtotal = breakdown.reduce((sum, item) => sum + item.subtotal, 0);
+        
+        // 定期利用なら税抜のまま、そうでなければ税込
+        let finalAmount;
+        if (regular) {
+          finalAmount = subtotal;
+        } else {
+          finalAmount = Math.round(subtotal * 1.1);
+        }
+
+        grandTotal += finalAmount;
+
+        const detailText = breakdown.map(item => 
+          `${item.label} ${item.hours}h × ¥${item.price.toLocaleString()} = ¥${item.subtotal.toLocaleString()}`
+        ).join('<br>');
+
+        const categoryLabel = priceCategory === 'over3' ? '3時間以上' : '3時間未満';
+        const taxNote = regular ? '（税抜＝定期利用価格）' : '（税込）';
+
+        breakdownHTML += `
+          <div class="breakdown-item">
+            <div class="breakdown-header">
+              <span class="breakdown-title">予約${index + 1}: ${formatDate(res.start)} 〜 ${formatDate(res.end)}</span>
+              <span class="breakdown-amount">¥${finalAmount.toLocaleString()}</span>
+            </div>
+            <div class="breakdown-detail">
+              ${totalHours}時間（${categoryLabel}）${taxNote}<br>
+              ${detailText}
+            </div>
+          </div>
+        `;
+      });
+
+      breakdownEl.innerHTML = breakdownHTML;
+      totalEl.textContent = `¥${grandTotal.toLocaleString()}`;
+      resultEl.classList.add('show');
+    }
+
+    // 初期表示: 1つの予約欄を表示
+    addReservation();
+  </script>
+</body>
+</html>
