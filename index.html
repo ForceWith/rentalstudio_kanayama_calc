@@ -462,9 +462,9 @@
 
       if (roundedMinutes === 60) {
         date.setHours(date.getHours() + 1);
-        date.setMinutes(0);
+        date.setMinutes(0, 0, 0);
       } else {
-        date.setMinutes(roundedMinutes);
+        date.setMinutes(roundedMinutes, 0, 0);
       }
 
       input.value = formatDateTimeLocal(date);
