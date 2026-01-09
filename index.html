@@ -429,10 +429,33 @@
       container.appendChild(div);
     }
 
+    function parseDateTimeLocal(value) {
+      // Expect value in "YYYY-MM-DDTHH:mm" (or "YYYY-MM-DDTHH:mm:ss") format from datetime-local
+      const [datePart, timePart] = value.split('T');
+      if (!datePart || !timePart) return null;
+
+      const [yearStr, monthStr, dayStr] = datePart.split('-');
+      const [hourStr, minuteStr] = timePart.split(':');
+
+      const year = Number(yearStr);
+      const month = Number(monthStr);
+      const day = Number(dayStr);
+      const hour = Number(hourStr);
+      const minute = Number(minuteStr);
+
+      if ([year, month, day, hour, minute].some(Number.isNaN)) {
+        return null;
+      }
+
+      // Use numeric Date constructor to create a local-time Date consistently across browsers
+      return new Date(year, month - 1, day, hour, minute);
+    }
+
     function roundMinutes(input) {
       if (!input.value) return;
 
-      const date = new Date(input.value);
+      const date = parseDateTimeLocal(input.value);
+      if (!date) return;
       const minutes = date.getMinutes();
       // 15分間隔に丸める（0, 15, 30, 45）
       const roundedMinutes = Math.round(minutes / 15) * 15;
