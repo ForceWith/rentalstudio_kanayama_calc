@@ -486,7 +486,7 @@
       // 開始時刻を15分間隔に丸める
       roundMinutes(startInput);
 
-      if (startInput.value && !endInput.value) {
+      if (startInput.value) {
         const startDate = new Date(startInput.value);
         startDate.setHours(startDate.getHours() + 1);
 
