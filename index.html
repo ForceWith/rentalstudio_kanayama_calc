@@ -217,6 +217,11 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
+    .segment-btn:disabled {
+      color: #c7c7cc;
+      cursor: not-allowed;
+    }
+
     .calculate-btn {
       width: 100%;
       padding: 16px;
@@ -331,7 +336,14 @@
     <div class="card">
       <div class="card-title">オプション</div>
       <div class="options">
-        <div class="option-row">
+        <div class="option-row" id="store-row">
+          <span class="option-label">店舗</span>
+          <div class="segment-control">
+            <button class="segment-btn store-btn active" data-value="kanayama" onclick="setStore(this)">金山</button>
+            <button class="segment-btn store-btn" data-value="yaba" onclick="setStore(this)">矢場町</button>
+          </div>
+        </div>
+        <div class="option-row" id="teiki-row">
           <span class="option-label">定期利用</span>
           <label class="toggle">
             <input type="checkbox" id="regular" onchange="updateSource()">
@@ -341,8 +353,8 @@
         <div class="option-row" id="source-row">
           <span class="option-label">予約経路</span>
           <div class="segment-control">
-            <button class="segment-btn active" data-value="yoyakuru" onclick="setSource(this)">よやくる</button>
-            <button class="segment-btn" data-value="insta" onclick="setSource(this)">インスタ・スペ</button>
+            <button class="segment-btn source-btn active" data-value="yoyakuru" onclick="setSource(this)">よやくる</button>
+            <button class="segment-btn source-btn" data-value="insta" onclick="setSource(this)">インスタ・スペ</button>
           </div>
         </div>
       </div>
@@ -360,39 +372,30 @@
   </div>
 
   <script>
-    // 料金テーブル（税抜）
+    // PRICES:BEGIN (自動生成: usabeat-ops pricing/sync_calc_tool.py が差し替える。手動編集しない)
     const PRICES = {
-      // 3時間未満
-      under3: {
-        yoyakuru: {
-          night: 1100,      // 深夜・早朝
-          daytime: 1300,    // 平日日中
-          evening: 2218,    // 平日夕方・夜
-          holiday: 2545     // 休日・祝日
+      "kanayama": {
+        "under3": {
+          "yoyakuru": { "night": 1100, "daytime": 1300, "evening": 2218, "holiday": 2545 },
+          "insta": { "night": 1300, "daytime": 1500, "evening": 2400, "holiday": 2700 }
         },
-        insta: {
-          night: 1300,
-          daytime: 1500,
-          evening: 2400,
-          holiday: 2700
+        "over3": {
+          "yoyakuru": { "night": 1000, "daytime": 1200, "evening": 2000, "holiday": 2278 },
+          "insta": { "night": 1200, "daytime": 1400, "evening": 2200, "holiday": 2500 }
         }
       },
-      // 3時間以上
-      over3: {
-        yoyakuru: {
-          night: 1000,
-          daytime: 1200,
-          evening: 2000,
-          holiday: 2278
+      "yaba": {
+        "under3": {
+          "yoyakuru": { "night": null, "daytime": null, "evening": null, "holiday": null },
+          "insta": { "night": null, "daytime": null, "evening": null, "holiday": null }
         },
-        insta: {
-          night: 1200,
-          daytime: 1400,
-          evening: 2200,
-          holiday: 2500
+        "over3": {
+          "yoyakuru": { "night": null, "daytime": null, "evening": null, "holiday": null },
+          "insta": { "night": null, "daytime": null, "evening": null, "holiday": null }
         }
       }
     };
+    // PRICES:END
 
     // 時間帯定義
     const TIME_ZONES = {
@@ -404,6 +407,7 @@
 
     let reservationCount = 0;
     let source = 'yoyakuru';
+    let store = 'kanayama';
 
     function addReservation() {
       reservationCount++;
@@ -504,12 +508,13 @@
     function updateSource() {
       const regular = document.getElementById('regular').checked;
       const sourceRow = document.getElementById('source-row');
-      
+
       if (regular) {
+        // 定期利用は yoyakuru 価格前提。source を yoyakuru に固定し経路選択を無効化。
         source = 'yoyakuru';
         sourceRow.style.opacity = '0.5';
         sourceRow.style.pointerEvents = 'none';
-        document.querySelectorAll('.segment-btn').forEach(btn => {
+        document.querySelectorAll('.source-btn').forEach(btn => {
           btn.classList.toggle('active', btn.dataset.value === 'yoyakuru');
         });
       } else {
@@ -519,9 +524,60 @@
     }
 
     function setSource(btn) {
-      document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       source = btn.dataset.value;
+      updateTeikiAvailability();
+    }
+
+    function updateTeikiAvailability() {
+      // 定期利用 (teiki) は直接契約 = yoyakuru 前提の概念。insta では使えない。
+      const teiki = document.getElementById('regular');
+      const teikiRow = document.getElementById('teiki-row');
+      if (source === 'insta') {
+        teiki.checked = false;      // チェックされていたら外す
+        teiki.disabled = true;      // 操作不可にする
+        teikiRow.style.opacity = '0.5';
+        teikiRow.style.pointerEvents = 'none';
+      } else {
+        teiki.disabled = false;     // 再度操作可能にする (自動でチェックはしない)
+        teikiRow.style.opacity = '1';
+        teikiRow.style.pointerEvents = 'auto';
+      }
+    }
+
+    function storeHasPrices(s) {
+      const st = PRICES[s];
+      if (!st) return false;
+      for (const plan of Object.keys(st)) {
+        for (const ch of Object.keys(st[plan])) {
+          for (const z of Object.keys(st[plan][ch])) {
+            const v = st[plan][ch][z];
+            if (v !== null && v !== undefined) return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function setStore(btn) {
+      if (btn.disabled) return;
+      document.querySelectorAll('.store-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      store = btn.dataset.value;
+    }
+
+    function initStoreButtons() {
+      // 価格が全て null の店舗 (未開設) はボタンを無効化し「準備中」を表示する。
+      document.querySelectorAll('.store-btn').forEach(btn => {
+        if (!storeHasPrices(btn.dataset.value)) {
+          btn.disabled = true;
+          btn.classList.remove('active');
+          if (!/準備中/.test(btn.textContent)) {
+            btn.textContent = btn.textContent + '（準備中）';
+          }
+        }
+      });
     }
 
     function isHoliday(date) {
@@ -683,16 +739,20 @@
         // 利用時間を計算
         const totalHours = (res.end - res.start) / (1000 * 60 * 60);
         const priceCategory = totalHours >= 3 ? 'over3' : 'under3';
-        const priceTable = PRICES[priceCategory][source];
+        const priceTable = PRICES[store][priceCategory][source];
 
         // 時間帯別の計算
         const breakdown = calculateReservation(res.start, res.end, priceTable);
-        
+
         let subtotal = breakdown.reduce((sum, item) => sum + item.subtotal, 0);
-        
-        // 定期利用なら税抜のまま、そうでなければ税込
+
+        // 税処理:
+        //   insta    … 単価が既に税込のため ×1.1 しない (二重課税を避ける)
+        //   yoyakuru … 通常は税込 (×1.1)。定期利用なら税抜のまま請求。
         let finalAmount;
-        if (regular) {
+        if (source === 'insta') {
+          finalAmount = subtotal;
+        } else if (regular) {
           finalAmount = subtotal;
         } else {
           finalAmount = Math.round(subtotal * 1.1);
@@ -705,7 +765,15 @@
         ).join('<br>');
 
         const categoryLabel = priceCategory === 'over3' ? '3時間以上' : '3時間未満';
-        const taxNote = regular ? '（税抜＝定期利用価格）' : '（税込）';
+        // insta は税込単価そのまま、yoyakuru 定期は税抜請求、それ以外は税込。
+        let taxNote;
+        if (source === 'insta') {
+          taxNote = '（税込）';
+        } else if (regular) {
+          taxNote = '（税抜＝定期利用価格）';
+        } else {
+          taxNote = '（税込）';
+        }
 
         breakdownHTML += `
           <div class="breakdown-item">
@@ -728,6 +796,8 @@
 
     // 初期表示: 1つの予約欄を表示
     addReservation();
+    initStoreButtons();
+    updateTeikiAvailability();
   </script>
 </body>
 </html>
