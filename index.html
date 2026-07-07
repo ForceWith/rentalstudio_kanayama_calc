@@ -344,7 +344,7 @@
           </div>
         </div>
         <div class="option-row" id="teiki-row">
-          <span class="option-label">定期利用</span>
+          <span class="option-label">定期利用（9%OFF）</span>
           <label class="toggle">
             <input type="checkbox" id="regular" onchange="updateSource()">
             <span class="toggle-slider"></span>
@@ -748,12 +748,18 @@
 
         // 税処理:
         //   insta    … 単価が既に税込のため ×1.1 しない (二重課税を避ける)
-        //   yoyakuru … 通常は税込 (×1.1)。定期利用なら税抜のまま請求。
+        //   yoyakuru … 通常は税込 (×1.1)。
+        //   yoyakuru + 定期利用 … よやくるでは定期予約に対する税抜請求(消費税割引)が
+        //     使えないことが判明 (2026-07-07確認)。そのためよやくる管理画面の定期予約
+        //     設定にある「割引9%」に合わせ、税込合計の9%引きで近似する。
+        //     丸め順は 税抜→税込(×1.1、1回丸め)→9%引き(×0.91、1回丸め) の順。
+        //     よやくる側の実際の割引適用時の丸め仕様は未確認のため、実予約の請求額と
+        //     数円ズレた場合はこの丸め順を実測に合わせて調整すること。
         let finalAmount;
         if (source === 'insta') {
           finalAmount = subtotal;
         } else if (regular) {
-          finalAmount = subtotal;
+          finalAmount = Math.round(Math.round(subtotal * 1.1) * 0.91);
         } else {
           finalAmount = Math.round(subtotal * 1.1);
         }
@@ -765,12 +771,12 @@
         ).join('<br>');
 
         const categoryLabel = priceCategory === 'over3' ? '3時間以上' : '3時間未満';
-        // insta は税込単価そのまま、yoyakuru 定期は税抜請求、それ以外は税込。
+        // insta は税込単価そのまま、yoyakuru 定期は税込9%引き、それ以外は税込。
         let taxNote;
         if (source === 'insta') {
           taxNote = '（税込）';
         } else if (regular) {
-          taxNote = '（税抜＝定期利用価格）';
+          taxNote = '（税込9%OFF＝定期利用価格）';
         } else {
           taxNote = '（税込）';
         }
